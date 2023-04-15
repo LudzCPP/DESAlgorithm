@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -30,7 +31,7 @@ namespace DESAlgorithm
             44, 49, 39, 56, 34, 53,
             46, 42, 50, 36, 29, 32};
 
-        private int[] InitPermut = new int[]{
+        private static int[] InitPermut = new int[]{
             58, 50, 42, 34, 26, 18, 10, 2,
             60, 52, 44, 36, 28, 20, 12, 4,
             62, 54, 46, 38, 30, 22, 14, 6,
@@ -40,7 +41,7 @@ namespace DESAlgorithm
             61, 53, 45, 37, 29, 21, 13, 5,
             63, 55, 47, 39, 31, 23, 15, 7};
 
-        private int[] ESelectionTable = new int[]{
+        private static int[] ESelectionTable = new int[]{
             32, 1, 2, 3, 4, 5,
             4, 5, 6, 7, 8, 9,
             8, 9, 10, 11, 12, 13,
@@ -50,7 +51,7 @@ namespace DESAlgorithm
             24, 25, 26, 27, 28, 29,
             28, 29, 30, 31, 32, 1};
 
-        private int[][] SBoxes = new int[][]{
+        private static int[][] SBoxes = new int[][]{
             new int[]{
                     14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
                     0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
@@ -92,7 +93,7 @@ namespace DESAlgorithm
                     7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
                     2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11}};
 
-        private int[] PBlockPermut = new int[]{
+        private static int[] PBlockPermut = new int[]{
             16, 7, 20, 21,
             29, 12, 28, 17,
             1, 15, 23, 26,
@@ -102,7 +103,7 @@ namespace DESAlgorithm
             19, 13, 30, 6,
             22, 11, 4, 25};
 
-        private int[] ReversedInitialPermut = new int[]{
+        private static int[] ReversedInitialPermut = new int[]{
             40, 8, 48, 16, 56, 24, 64, 32,
             39, 7, 47, 15, 55, 23, 63, 31,
             38, 6, 46, 14, 54, 22, 62, 30,
@@ -232,15 +233,133 @@ namespace DESAlgorithm
             return (shiftedArray1, shiftedArray2);
         }
 
+        public static int[] XOR(int[] inputA, int[] inputB)
+        {
+            int[] result = new int[inputA.Length];
+
+            for (int i = 0; i < inputA.Length; i++)
+            {
+                result[i] = inputA[i] ^ inputB[i];
+            }
+
+
+            return result;
+        }
+
+        public static int[] Fun(int[] inputA, int[] inputB)
+        {
+            int[] result = new int[8];
+            inputA = Permut(inputA, ESelectionTable);
+            //ShowTable(inputA);
+
+            int[] xor = XOR(inputA, inputB);
+
+            int[][] Groups = Group(xor);
+            //Show2DTable(Groups);
+
+            for(int i = 0; i < 8; i++)
+            {
+                int[] row = new int[2];
+                int[] col = new int[4];
+                row[0] = Groups[i][0];
+                row[1] = Groups[i][5];
+                
+                for(int j = 0; j < 4; j++)
+                {
+                    col[j] = Groups[i][j + 1];
+                }
+
+                Groups[i] = DecimalToBinaryIntArray(SBoxes[i][16 * BinaryIntArrayToDecimal(row) + BinaryIntArrayToDecimal(col)]);
+                result = Flatten2DArray(Groups);
+
+                result = Permut(result, PBlockPermut);
+            }
+
+
+            return result;
+        }
+
+        public static int[][] Group(int[] inputA)
+        {
+            int[][] result = new int[8][];
+
+            for (int i = 0; i < 8; i++)
+            {
+                result[i] = new int[6];
+                for (int j = 0; j < 6; j++)
+                {
+                    result[i][j] = inputA[i * 6 + j];
+                }
+            }
+
+            return result;
+        }
+
+
+        public static int[] Flatten2DArray(int[][] twoDArray)
+        {
+            int rows = twoDArray.Length;
+            int cols = twoDArray[0].Length;
+            int[] oneDArray = new int[rows * cols];
+            int index = 0;
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    oneDArray[index++] = twoDArray[i][j];
+                }
+            }
+
+            return oneDArray;
+        }
+
+
+        public static int BinaryIntArrayToDecimal(int[] binaryArray)
+        {
+            int decimalNumber = 0;
+            int length = binaryArray.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                int currentBit = binaryArray[length - 1 - i];
+
+                if (currentBit == 1)
+                {
+                    decimalNumber += (int)Math.Pow(2, i);
+                }
+            }
+
+            return decimalNumber;
+        }
+
+        public static int[] DecimalToBinaryIntArray(int decimalNumber)
+        {
+            int[] binaryArray = new int[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                binaryArray[3 - i] = decimalNumber % 2;
+                decimalNumber /= 2;
+            }
+
+            return binaryArray;
+        }
+
 
 
         static void Main(string[] args)
         {
-            String message = "0123";
+            String message = "";
             String key = "zzzzzzzz";
 
             int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
                 1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
+            
+            int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
+                1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };
+
+
 
             int[][] Keys = new int[16][];
 
@@ -256,16 +375,39 @@ namespace DESAlgorithm
             }
 
 
-            
-
             //ShowTable(ShiftedArrayC.Concat(ShiftedArrayD).ToArray());
             //ShowTable(ShiftedArrayD);
 
             //Console.WriteLine();
-            for (int i = 0; i < 16; i++)
+            /*for (int i = 0; i < 16; i++)
             {
                 ShowTable(Keys[i]);
-            } 
+            }*/
+
+            msg = Permut(msg, InitPermut);
+            int[] L = msg.Take(msg.Length / 2).ToArray();
+            int[] R = msg.Skip(msg.Length / 2).ToArray();
+            //ShowTable(L);
+            //ShowTable(R);
+
+            int[][] Ls = new int[17][];
+            int[][] Rs = new int[17][];
+
+            Ls[0] = L;
+            Rs[0] = R;
+            
+
+            for(int i = 1; i < 17; i++)
+            {              
+                Ls[i] = Rs[i - 1];
+                Rs[i] = XOR(Ls[i - 1], Fun(Rs[i - 1], Keys[i - 1]));               
+            }
+
+            int[] result = Rs[16].Concat(Ls[16]).ToArray();
+            result = Permut(result, ReversedInitialPermut);
+
+            ShowTable(result);
+
         }
     }
 }
