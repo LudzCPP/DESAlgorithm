@@ -179,9 +179,33 @@ namespace DESAlgorithm
             }
         }
 
+        public static int[][] To2DTable(int[] binaryTable)
+        {
+            int[][] result = new int[8][]; 
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    result[i][j] = binaryTable[i * 8 + j];
+                }
+                Console.WriteLine();
+            }
+
+            return result;
+        }
+
         public static void ShowTable(int[] table)
         {
             foreach (int i in table)
+            {
+                Console.Write(i + " ");
+            }
+            Console.WriteLine();
+        }
+
+        public static void ShowByteTable(byte[] table)
+        {
+            foreach (byte i in table)
             {
                 Console.Write(i + " ");
             }
@@ -354,6 +378,31 @@ namespace DESAlgorithm
             return binaryArray;
         }
 
+        public int[] toBinaryintArray(string str)
+        {
+            return stringToIntArr(ToBinary(ConvToByteArr(str, Encoding.UTF8)));
+        }
+
+        public static int[] stringToIntArr(string str)
+        {
+            int[] intArr = new int[str.Length];
+            for (int i = 0; i < str.Length; i++)
+            {
+                intArr[i] = int.Parse(str.Substring(i, 1));
+            }
+            return intArr;
+        }
+
+        public static byte[] ConvToByteArr(string str, Encoding encoding)
+        {
+            return encoding.GetBytes(str);
+        }
+
+        public static String ToBinary(Byte[] data)
+        {
+            return string.Join("", data.Select(byt => Convert.ToString(byt, 2).PadLeft(8, '0')));
+        }
+
 
         public static int[] Encrypt(int[] message, string key)
         {
@@ -383,21 +432,10 @@ namespace DESAlgorithm
                 Keys[i] = Permut(C.Concat(D).ToArray(), KeyPermutPC2);
             }
 
-
-            //ShowTable(ShiftedArrayC.Concat(ShiftedArrayD).ToArray());
-            //ShowTable(ShiftedArrayD);
-
-            //Console.WriteLine();
-            /*for (int i = 0; i < 16; i++)
-            {
-                ShowTable(Keys[i]);
-            }*/
-
             msg = Permut(msg, InitPermut);
             int[] L = msg.Take(msg.Length / 2).ToArray();
             int[] R = msg.Skip(msg.Length / 2).ToArray();
-            //ShowTable(L);
-            //ShowTable(R);
+    
 
             int[][] Ls = new int[17][];
             int[][] Rs = new int[17][];
@@ -417,6 +455,59 @@ namespace DESAlgorithm
 
             return result;
         }
+
+        public static int[] Decrypt(int[] message, string key)
+        {
+            /* int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
+                 1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
+
+             int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
+                 1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };*/
+
+
+            int[][] keyxd = StringToBinaryTable(key);
+            int[] msg = message;
+            int[] xd = Flatten2DArray(keyxd);
+
+
+
+            int[][] Keys = new int[16][];
+
+            int[] xd1 = Permut(xd, KeyPermutPC1);
+            int[] C = xd1.Take(xd1.Length / 2).ToArray();
+            int[] D = xd1.Skip(xd1.Length / 2).ToArray();
+
+
+            for (int i = 0; i < 16; i++)
+            {
+                (C, D) = ShiftLeft(C, D, KeyShifts[i]);
+                Keys[i] = Permut(C.Concat(D).ToArray(), KeyPermutPC2);
+            }
+
+            msg = Permut(msg, InitPermut);
+            int[] L = msg.Take(msg.Length / 2).ToArray();
+            int[] R = msg.Skip(msg.Length / 2).ToArray();
+
+
+            int[][] Ls = new int[17][];
+            int[][] Rs = new int[17][];
+
+            Ls[16] = L;
+            Rs[16] = R;
+
+
+            for (int i = 15; i >= 0; i--)
+            {
+                Ls[i] = Rs[i + 1];
+                Rs[i] = XOR(Ls[i + 1], Fun(Rs[i + 1], Keys[i]));
+            }
+
+            int[] result = Rs[0].Concat(Ls[0]).ToArray();
+            result = Permut(result, ReversedInitialPermut);
+
+            return result;
+        }
+
 
         public static string BinaryToAscii(int[] binaryArray)
         {
@@ -448,26 +539,78 @@ namespace DESAlgorithm
             return hexBuilder.ToString();
         }
 
+        public static byte[] intArrToByteArr(int[] bytes)
+        {
+            byte[] binintArray = new byte[bytes.Length / 8];
+            for (int i = 0; i < binintArray.Length; i++)
+            {
+                binintArray[i] = BitConverter.GetBytes(
+                    bytes[i * 8] << 7 |
+                    bytes[i * 8 + 1] << 6 |
+                    bytes[i * 8 + 2] << 5 |
+                    bytes[i * 8 + 3] << 4 |
+                    bytes[i * 8 + 4] << 3 |
+                    bytes[i * 8 + 5] << 2 |
+                    bytes[i * 8 + 6] << 1 |
+                    bytes[i * 8 + 7])[0];
+            }
+            return binintArray;
+
+        }
 
 
 
         static void Main(string[] args)
         {
-            String message = "AB12CD34AV";
-            String key = "AL1029AS";
-            string fileText = File.ReadAllText("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
-            byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
+            String message = "testtest1";
+            String key = "mysecret";
 
-            int[][] messagexd = StringToBinaryTable(fileText);
+            /*byte[] ba = Encoding.Default.GetBytes(message);
 
+            var hexString = Convert.ToHexString(ba);*/
+
+            //ShowByteTable(ba);
+
+            int[] msgTest = stringToIntArr(ToBinary(ConvToByteArr(message, Encoding.ASCII)));
+
+            ShowTable(msgTest);
+            //string fileText = File.ReadAllText("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
+            //byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
+
+            int[][] messagexd = StringToBinaryTable(message);
+
+            Show2DTable(messagexd);
             int[][] msgPad = PadAndFlattenBinaryTable(messagexd);
+
             /*Show2DTable(messagexd);
+            Console.WriteLine();*/
+            //Show2DTable(messagexd);
             Console.WriteLine();
-            Show2DTable(msgPad);*/
+
+            int[][] result = new int [message.Length][];
+            int i = 0;
+            
+
             foreach (int[] x in msgPad)
             {
+
                 Console.Write(BinaryToHex(Encrypt(x, key)));
+                result[i] = Encrypt(x, key);
+                i++;
             }
+            //Show2DTable(result);
+            Console.WriteLine();
+            foreach (int[] x in result)
+            {
+                //Console.Write(BinaryToHex(Decrypt(x, key)));
+                string str = System.Text.Encoding.ASCII.GetString(intArrToByteArr(Decrypt(x, key)));
+                Console.WriteLine(str);
+                //ShowTable(x);
+            }
+
+            
+
+            //Decrypt
 
 
         }
