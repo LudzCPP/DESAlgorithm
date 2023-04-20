@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -417,14 +418,47 @@ namespace DESAlgorithm
             return result;
         }
 
+        public static string BinaryToAscii(int[] binaryArray)
+        {
+            byte[] byteArray = new byte[binaryArray.Length / 8];
+
+            for (int i = 0; i < binaryArray.Length; i += 8)
+            {
+                byte b = 0;
+                for (int j = 0; j < 8; j++)
+                {
+                    b = (byte)((b << 1) | binaryArray[i + j]);
+                }
+                byteArray[i / 8] = b;
+            }
+
+            return Encoding.ASCII.GetString(byteArray);
+        }
+
+        public static string BinaryToHex(int[] binaryArray)
+        {
+            StringBuilder hexBuilder = new StringBuilder(binaryArray.Length / 4);
+
+            for (int i = 0; i < binaryArray.Length; i += 4)
+            {
+                int nibble = binaryArray[i] << 3 | binaryArray[i + 1] << 2 | binaryArray[i + 2] << 1 | binaryArray[i + 3];
+                hexBuilder.Append(nibble.ToString("X"));
+            }
+
+            return hexBuilder.ToString();
+        }
+
+
 
 
         static void Main(string[] args)
         {
             String message = "AB12CD34AV";
             String key = "AL1029AS";
+            string fileText = File.ReadAllText("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
+            byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
 
-            int[][] messagexd = StringToBinaryTable(message);
+            int[][] messagexd = StringToBinaryTable(fileText);
 
             int[][] msgPad = PadAndFlattenBinaryTable(messagexd);
             /*Show2DTable(messagexd);
@@ -432,7 +466,7 @@ namespace DESAlgorithm
             Show2DTable(msgPad);*/
             foreach (int[] x in msgPad)
             {
-                ShowTable(Encrypt(x, key));
+                Console.Write(BinaryToHex(Encrypt(x, key)));
             }
 
 
