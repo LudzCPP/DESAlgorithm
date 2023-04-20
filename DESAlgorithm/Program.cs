@@ -148,7 +148,7 @@ namespace DESAlgorithm
 
         public static int[][] StringToBinaryTable(string inputString)
         {
-          
+
 
             int[][] binaryTable = new int[inputString.Length][];
 
@@ -180,35 +180,43 @@ namespace DESAlgorithm
 
         public static void ShowTable(int[] table)
         {
-            foreach(int i in table)
+            foreach (int i in table)
             {
                 Console.Write(i + " ");
             }
             Console.WriteLine();
         }
 
-        public static int[] PadAndFlattenBinaryTable(int[][] binaryTable)
+        public static int[][] PadAndFlattenBinaryTable(int[][] binaryTable)
         {
-            int maxRows = 8;
-            int[] flattenedTable = new int[maxRows * 8];
+            int rows = (int)Math.Ceiling((double)binaryTable.Length * 8 / 64);
+            int[][] paddedTable = new int[rows][];
 
-            for (int i = 0; i < maxRows; i++)
+            for (int i = 0; i < rows; i++)
             {
-                for (int j = 0; j < 8; j++)
+                paddedTable[i] = new int[64];
+                for (int j = 0; j < 64; j++)
                 {
-                    if (i < binaryTable.Length && j < binaryTable[i].Length)
+                    int row = j / 8;
+                    int col = j % 8;
+                    int index = i * 8 + row;
+                    int[] currentRow = index < binaryTable.Length ? binaryTable[index] : new int[8];
+
+                    if (col < currentRow.Length)
                     {
-                        flattenedTable[i * 8 + j] = binaryTable[i][j];
+                        paddedTable[i][j] = currentRow[col];
                     }
                     else
                     {
-                        flattenedTable[i * 8 + j] = 0;
+                        paddedTable[i][j] = 0;
                     }
                 }
             }
 
-            return flattenedTable;
+            return paddedTable;
         }
+
+
 
         public static (int[], int[]) ShiftLeft(int[] inputC, int[] inputD, int shiftCount)
         {
@@ -255,16 +263,15 @@ namespace DESAlgorithm
             int[] xor = XOR(inputA, inputB);
 
             int[][] Groups = Group(xor);
-            //Show2DTable(Groups);
 
-            for(int i = 0; i < 8; i++)
+            for (int i = 0; i < 8; i++)
             {
                 int[] row = new int[2];
                 int[] col = new int[4];
                 row[0] = Groups[i][0];
                 row[1] = Groups[i][5];
-                
-                for(int j = 0; j < 4; j++)
+
+                for (int j = 0; j < 4; j++)
                 {
                     col[j] = Groups[i][j + 1];
                 }
@@ -347,17 +354,18 @@ namespace DESAlgorithm
         }
 
 
-
-        static void Main(string[] args)
+        public static int[] Encrypt(int[] message, string key)
         {
-            String message = "";
-            String key = "zzzzzzzz";
+            /* int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
+                 1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
 
-            int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
-                1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
-            
-            int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
-                1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };
+             int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
+                 1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };*/
+
+
+            int[][] keyxd = StringToBinaryTable(key);
+            int[] msg = message;
+            int[] xd = Flatten2DArray(keyxd);
 
 
 
@@ -366,7 +374,7 @@ namespace DESAlgorithm
             int[] xd1 = Permut(xd, KeyPermutPC1);
             int[] C = xd1.Take(xd1.Length / 2).ToArray();
             int[] D = xd1.Skip(xd1.Length / 2).ToArray();
-           
+
 
             for (int i = 0; i < 16; i++)
             {
@@ -395,18 +403,38 @@ namespace DESAlgorithm
 
             Ls[0] = L;
             Rs[0] = R;
-            
 
-            for(int i = 1; i < 17; i++)
-            {              
+
+            for (int i = 1; i < 17; i++)
+            {
                 Ls[i] = Rs[i - 1];
-                Rs[i] = XOR(Ls[i - 1], Fun(Rs[i - 1], Keys[i - 1]));               
+                Rs[i] = XOR(Ls[i - 1], Fun(Rs[i - 1], Keys[i - 1]));
             }
 
             int[] result = Rs[16].Concat(Ls[16]).ToArray();
             result = Permut(result, ReversedInitialPermut);
 
-            ShowTable(result);
+            return result;
+        }
+
+
+
+        static void Main(string[] args)
+        {
+            String message = "AB12CD34AV";
+            String key = "AL1029AS";
+
+            int[][] messagexd = StringToBinaryTable(message);
+
+            int[][] msgPad = PadAndFlattenBinaryTable(messagexd);
+            /*Show2DTable(messagexd);
+            Console.WriteLine();
+            Show2DTable(msgPad);*/
+            foreach (int[] x in msgPad)
+            {
+                ShowTable(Encrypt(x, key));
+            }
+
 
         }
     }
