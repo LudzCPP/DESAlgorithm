@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -179,21 +180,6 @@ namespace DESAlgorithm
             }
         }
 
-        public static int[][] To2DTable(int[] binaryTable)
-        {
-            int[][] result = new int[8][]; 
-            for (int i = 0; i < 8; i++)
-            {
-                for (int j = 0; j < 8; j++)
-                {
-                    result[i][j] = binaryTable[i * 8 + j];
-                }
-                Console.WriteLine();
-            }
-
-            return result;
-        }
-
         public static void ShowTable(int[] table)
         {
             foreach (int i in table)
@@ -203,19 +189,11 @@ namespace DESAlgorithm
             Console.WriteLine();
         }
 
-        public static void ShowByteTable(byte[] table)
-        {
-            foreach (byte i in table)
-            {
-                Console.Write(i + " ");
-            }
-            Console.WriteLine();
-        }
-
-        public static int[][] PadAndFlattenBinaryTable(int[][] binaryTable)
+        public static (int[][], int) PadAndFlattenBinaryTable(int[][] binaryTable)
         {
             int rows = (int)Math.Ceiling((double)binaryTable.Length * 8 / 64);
             int[][] paddedTable = new int[rows][];
+            int addedZeros = 0;
 
             for (int i = 0; i < rows; i++)
             {
@@ -234,11 +212,12 @@ namespace DESAlgorithm
                     else
                     {
                         paddedTable[i][j] = 0;
+                        addedZeros++;
                     }
                 }
             }
 
-            return paddedTable;
+            return (paddedTable, addedZeros);
         }
 
 
@@ -378,37 +357,11 @@ namespace DESAlgorithm
             return binaryArray;
         }
 
-        public int[] toBinaryintArray(string str)
-        {
-            return stringToIntArr(ToBinary(ConvToByteArr(str, Encoding.UTF8)));
-        }
-
-        public static int[] stringToIntArr(string str)
-        {
-            int[] intArr = new int[str.Length];
-            for (int i = 0; i < str.Length; i++)
-            {
-                intArr[i] = int.Parse(str.Substring(i, 1));
-            }
-            return intArr;
-        }
-
-        public static byte[] ConvToByteArr(string str, Encoding encoding)
-        {
-            return encoding.GetBytes(str);
-        }
-
-        public static String ToBinary(Byte[] data)
-        {
-            return string.Join("", data.Select(byt => Convert.ToString(byt, 2).PadLeft(8, '0')));
-        }
-
 
         public static int[] Encrypt(int[] message, string key)
         {
             /* int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
                  1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
-
              int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
                  1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };*/
 
@@ -435,7 +388,6 @@ namespace DESAlgorithm
             msg = Permut(msg, InitPermut);
             int[] L = msg.Take(msg.Length / 2).ToArray();
             int[] R = msg.Skip(msg.Length / 2).ToArray();
-    
 
             int[][] Ls = new int[17][];
             int[][] Rs = new int[17][];
@@ -460,7 +412,6 @@ namespace DESAlgorithm
         {
             /* int[] xd = new int[]{0,0,0,1,0,0,1,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,1,0,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,
                  1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1 };
-
              int[] msg = new int[]{0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,1,
                  1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1 };*/
 
@@ -488,7 +439,6 @@ namespace DESAlgorithm
             int[] L = msg.Take(msg.Length / 2).ToArray();
             int[] R = msg.Skip(msg.Length / 2).ToArray();
 
-
             int[][] Ls = new int[17][];
             int[][] Rs = new int[17][];
 
@@ -507,7 +457,6 @@ namespace DESAlgorithm
 
             return result;
         }
-
 
         public static string BinaryToAscii(int[] binaryArray)
         {
@@ -558,61 +507,116 @@ namespace DESAlgorithm
 
         }
 
+        public static int[] RemovePad(int[] input)
+        {
+            int zeroCount = 0;
+            List<int> resultList = new List<int>();
+            for (int i = input.Length - 1; i >= 0; i--)
+            {
+                if (input[i] == 0)
+                {
+                    zeroCount++;
+                    if (zeroCount == 8)
+                    {
+                        // Sprawdzenie, czy wartość resultList.Count - 8 jest nieujemna
+                        int startIndex = Math.Max(resultList.Count - 8, 0);
+                        int count = resultList.Count - startIndex;
+
+                        resultList.RemoveRange(startIndex, count);
+                        zeroCount = 0;
+                    }
+                }
+                else
+                {
+                    zeroCount = 0;
+                }
+
+                resultList.Insert(0, input[i]);
+            }
+
+            return resultList.ToArray();
+        }
+
+        public static int[][] ConvertByteArrayToIntArray(byte[] byteArray)
+        {
+            int[][] result = new int[(int)Math.Ceiling(byteArray.Length / 8.0)][];
+            int byteIndex = 0;
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new int[8];
+                for (int j = 0; j < 8; j++)
+                {
+                    if (byteIndex < byteArray.Length)
+                    {
+                        result[i][j] = (int)byteArray[byteIndex];
+                        byteIndex++;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+
+        public static byte[] IntArrayToByteArray(int[] intArray)
+        {
+            byte[] byteArray = new byte[intArray.Length * sizeof(int)];
+            Buffer.BlockCopy(intArray, 0, byteArray, 0, byteArray.Length);
+            return byteArray;
+        }
+
 
 
         static void Main(string[] args)
         {
-            String message = "testtest1";
-            String key = "mysecret";
-
-            /*byte[] ba = Encoding.Default.GetBytes(message);
-
-            var hexString = Convert.ToHexString(ba);*/
-
-            //ShowByteTable(ba);
-
-            int[] msgTest = stringToIntArr(ToBinary(ConvToByteArr(message, Encoding.ASCII)));
-
-            ShowTable(msgTest);
+            String message = "AB12CD34AVasd12AD21das";
+            String key = "AL1029AS";
             //string fileText = File.ReadAllText("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
             //byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
 
             int[][] messagexd = StringToBinaryTable(message);
+            //int[][] messagexd = ConvertByteArrayToIntArray(fileBytes);
 
-            Show2DTable(messagexd);
-            int[][] msgPad = PadAndFlattenBinaryTable(messagexd);
+            (int[][] msgPad, int Zeros) = PadAndFlattenBinaryTable(messagexd);
 
-            /*Show2DTable(messagexd);
-            Console.WriteLine();*/
-            //Show2DTable(messagexd);
-            Console.WriteLine();
+            Show2DTable(msgPad);
 
-            int[][] result = new int [message.Length][];
+            int[][] resultEnc = new int[message.Length / 8 + 1][];
+            int[][] resultDec = new int[message.Length / 8 + 1][];
             int i = 0;
-            
-
+            int j = 0;
+            string str = "";
+            /*Show2DTable(messagexd);
+            Console.WriteLine();
+            Show2DTable(msgPad);*/
             foreach (int[] x in msgPad)
             {
-
-                Console.Write(BinaryToHex(Encrypt(x, key)));
-                result[i] = Encrypt(x, key);
+                //Console.Write(BinaryToHex(Encrypt(x, key)));
+                //ShowTable(Encrypt(x, key));
+                resultEnc[i] = Encrypt(x, key);
                 i++;
             }
-            //Show2DTable(result);
-            Console.WriteLine();
-            foreach (int[] x in result)
+            Console.WriteLine("Decrypt");
+
+            foreach (int[] x in resultEnc)
             {
-                //Console.Write(BinaryToHex(Decrypt(x, key)));
-                string str = System.Text.Encoding.ASCII.GetString(intArrToByteArr(Decrypt(x, key)));
-                Console.WriteLine(str);
-                //ShowTable(x);
+                //Console.Write(BinaryToHex(Encrypt(x, key)));
+                //ShowTable(Decrypt(x, key));
+                resultDec[j] = Decrypt(x, key);
+                //str += System.Text.Encoding.ASCII.GetString(intArrToByteArr(Decrypt(x, key)));
+                //Console.Write(str);
+                j++;
             }
+            Console.WriteLine("---");
+            ShowTable(RemovePad(Flatten2DArray(resultDec)));
+            //File.WriteAllBytes("C:\\Users\\kacpe\\Downloads\\Poli.pdf", IntArrayToByteArray(RemovePad(Flatten2DArray(resultDec)));
+            Console.WriteLine(System.Text.Encoding.ASCII.GetString(intArrToByteArr(RemovePad(Flatten2DArray(resultDec)))));
+            Console.WriteLine("---");
 
-            
-
-            //Decrypt
 
 
+            //Console.WriteLine(str);
         }
     }
 }
