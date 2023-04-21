@@ -191,6 +191,8 @@ namespace DESAlgorithm
 
         public static (int[][], int) PadAndFlattenBinaryTable(int[][] binaryTable)
         {
+            //Console.WriteLine("Przed pad:");
+            //Show2DTable(binaryTable);
             int rows = (int)Math.Ceiling((double)binaryTable.Length * 8 / 64);
             int[][] paddedTable = new int[rows][];
             int addedZeros = 0;
@@ -203,7 +205,16 @@ namespace DESAlgorithm
                     int row = j / 8;
                     int col = j % 8;
                     int index = i * 8 + row;
-                    int[] currentRow = index < binaryTable.Length ? binaryTable[index] : new int[8];
+                    int[] currentRow = new int[8];
+                    if(index < binaryTable.Length)
+                    {
+                        currentRow = binaryTable[index];
+                    }
+                    else
+                    {
+                        addedZeros++;
+                    }
+                    //int[] currentRow = index < binaryTable.Length ? binaryTable[index] : new int[8];
 
                     if (col < currentRow.Length)
                     {
@@ -212,11 +223,12 @@ namespace DESAlgorithm
                     else
                     {
                         paddedTable[i][j] = 0;
-                        addedZeros++;
                     }
                 }
             }
-
+            //Console.WriteLine("Zeros: " + addedZeros);
+            //Console.WriteLine("Po pad:");
+            //Show2DTable(paddedTable);
             return (paddedTable, addedZeros);
         }
 
@@ -507,35 +519,15 @@ namespace DESAlgorithm
 
         }
 
-        public static int[] RemovePad(int[] input)
+        public static int[] RemovePad(int[] input, int numToRemove)
         {
-            int zeroCount = 0;
-            List<int> resultList = new List<int>();
-            for (int i = input.Length - 1; i >= 0; i--)
-            {
-                if (input[i] == 0)
-                {
-                    zeroCount++;
-                    if (zeroCount == 8)
-                    {
-                        // Sprawdzenie, czy wartość resultList.Count - 8 jest nieujemna
-                        int startIndex = Math.Max(resultList.Count - 8, 0);
-                        int count = resultList.Count - startIndex;
 
-                        resultList.RemoveRange(startIndex, count);
-                        zeroCount = 0;
-                    }
-                }
-                else
-                {
-                    zeroCount = 0;
-                }
-
-                resultList.Insert(0, input[i]);
-            }
-
-            return resultList.ToArray();
+            int[] result = new int[input.Length - numToRemove];
+            Array.Copy(input, 0, result, 0, result.Length);
+            return result;
         }
+
+
 
         public static int[][] ConvertByteArrayToIntArray(byte[] byteArray)
         {
@@ -568,28 +560,126 @@ namespace DESAlgorithm
 
 
 
+
+        public static int[][] BytesToBinaryTable(byte[] bytes)
+        {
+            int[][] binaryTable = ByteArrayToBinaryTable(bytes);
+            int rowCount = (binaryTable.Length + 7) / 8;
+            int[][] binaryTableWith8Columns = new int[rowCount][];
+            for (int i = 0; i < rowCount; i++)
+            {
+                binaryTableWith8Columns[i] = new int[8];
+                for (int j = 0; j < 8; j++)
+                {
+                    int index = (i * 8) + j;
+                    if (index < binaryTable.Length)
+                    {
+                        binaryTableWith8Columns[i][j] = binaryTable[index][0];
+                    }
+                    else
+                    {
+                        binaryTableWith8Columns[i][j] = 0;
+                    }
+                }
+            }
+            return binaryTableWith8Columns;
+        }
+
+        public static int[][] ByteArrayToBinaryTable(byte[] inputBytes)
+        {
+            int[][] binaryTable = new int[inputBytes.Length][];
+
+            for (int i = 0; i < inputBytes.Length; i++)
+            {
+                string binaryString = Convert.ToString(inputBytes[i], 2).PadLeft(8, '0');
+                binaryTable[i] = new int[binaryString.Length];
+                for (int j = 0; j < binaryString.Length; j++)
+                {
+                    binaryTable[i][j] = binaryString[j] - '0';
+                }
+            }
+
+            return binaryTable;
+        }
+
+        public static byte[] IntTableToByteArray(int[][] intTable)
+        {
+            byte[] byteArray = new byte[intTable.Length * 8];
+
+            for (int i = 0; i < intTable.Length; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    byteArray[i * 8 + j] = (byte)(intTable[i][j] << (7 - j));
+                    
+                }
+                
+            }
+
+            return byteArray;
+        }
+
+        public static void ShowByteArray(byte[] array)
+        {
+            foreach (byte b in array)
+            {
+                Console.Write($"{b:X2} ");
+            }
+            Console.WriteLine();
+        }
+
+        public static string ByteArrayToHexString(byte[] byteArray)
+        {
+            string hexString = BitConverter.ToString(byteArray).Replace("-", "");
+            return hexString;
+        }
+
+        // Funkcja zamieniająca tablicę byte na tekst ASCII
+        public static string ByteArrayToAscii(byte[] byteArray)
+        {
+            StringBuilder sb = new StringBuilder(byteArray.Length);
+
+            foreach (byte b in byteArray)
+            {
+                sb.Append((char)b);
+            }
+
+            return sb.ToString();
+        }
+
+        // Funkcja zamieniająca tekst ASCII na tablicę byte
+        public static byte[] AsciiToByteArray(string asciiText)
+        {
+            byte[] byteArray = new byte[asciiText.Length];
+
+            for (int i = 0; i < asciiText.Length; i++)
+            {
+                byteArray[i] = (byte)asciiText[i];
+            }
+
+            return byteArray;
+        }
+
+
         static void Main(string[] args)
         {
-            String message = "AB12CD34AVasd12AD21das";
+            /*String message = "teks\n . \nt";
             String key = "AL1029AS";
-            //string fileText = File.ReadAllText("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
-            //byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
 
             int[][] messagexd = StringToBinaryTable(message);
-            //int[][] messagexd = ConvertByteArrayToIntArray(fileBytes);
 
             (int[][] msgPad, int Zeros) = PadAndFlattenBinaryTable(messagexd);
 
-            Show2DTable(msgPad);
-
-            int[][] resultEnc = new int[message.Length / 8 + 1][];
-            int[][] resultDec = new int[message.Length / 8 + 1][];
+            int[][] resultEnc = new int[msgPad.Length][];
+            int[][] resultDec = new int[msgPad.Length][];
             int i = 0;
             int j = 0;
             string str = "";
-            /*Show2DTable(messagexd);
+            Show2DTable(messagexd);
             Console.WriteLine();
-            Show2DTable(msgPad);*/
+            
+            Console.WriteLine("i max: " + (i - 1));
+            Console.WriteLine("dlugosc: " + (resultEnc.Length));
             foreach (int[] x in msgPad)
             {
                 //Console.Write(BinaryToHex(Encrypt(x, key)));
@@ -597,7 +687,8 @@ namespace DESAlgorithm
                 resultEnc[i] = Encrypt(x, key);
                 i++;
             }
-            Console.WriteLine("Decrypt");
+            Console.WriteLine("i max: " +(i - 1));
+            Console.WriteLine("dlugosc: " +(resultEnc.Length));
 
             foreach (int[] x in resultEnc)
             {
@@ -609,11 +700,72 @@ namespace DESAlgorithm
                 j++;
             }
             Console.WriteLine("---");
-            ShowTable(RemovePad(Flatten2DArray(resultDec)));
-            //File.WriteAllBytes("C:\\Users\\kacpe\\Downloads\\Poli.pdf", IntArrayToByteArray(RemovePad(Flatten2DArray(resultDec)));
-            Console.WriteLine(System.Text.Encoding.ASCII.GetString(intArrToByteArr(RemovePad(Flatten2DArray(resultDec)))));
+            ShowTable(RemovePad(Flatten2DArray(resultDec), Zeros));
+            Console.WriteLine(System.Text.Encoding.ASCII.GetString(intArrToByteArr(RemovePad(Flatten2DArray(resultDec), Zeros))));
             Console.WriteLine("---");
 
+            //Console.WriteLine(str);*/
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ///
+            
+            String key = "AL1029AS";
+            byte[] fileBytes = File.ReadAllBytes("C:\\Users\\kacpe\\Downloads\\PoliClinic - Inf. ws. badań studentów.pdf");
+            //ShowByteArray(fileBytes);
+            //ShowByteArray(fileBytes);
+
+            int[][] messagexd = StringToBinaryTable(ByteArrayToAscii(fileBytes));
+           // Console.WriteLine(ByteArrayToAscii(fileBytes));
+            //Show2DTable(messagexd);
+            //int[][] messagexd = ConvertByteArrayToIntArray(fileBytes);
+
+            (int[][] msgPad, int Zeros) = PadAndFlattenBinaryTable(messagexd);
+
+            //Show2DTable(msgPad);
+
+            int[][] resultEnc = new int[msgPad.Length][];
+            int[][] resultDec = new int[msgPad.Length][];
+            int i = 0;
+            int j = 0;
+            string str = "";
+
+            //Console.WriteLine(ByteArrayToAscii(fileBytes));
+            //Console.WriteLine(ByteArrayToAscii(fileBytes));
+
+            foreach (int[] x in msgPad)
+            {
+                //Console.Write(BinaryToHex(Encrypt(x, key)));
+                //ShowTable(Encrypt(x, key));
+                resultEnc[i] = Encrypt(x, key);
+                //ShowTable(resultEnc[i]);
+                i++;
+            }
+            Console.WriteLine("i: " + i);
+            Console.WriteLine("dlugosc: " + resultEnc.Length);
+            
+           
+            //IntTableToByteArray(resultEnc);
+            Console.WriteLine("Decrypt");
+            //Console.Write(ByteArrayToHexString(fileBytes));
+
+            foreach (int[] x in resultEnc)
+            {
+                //Console.Write(BinaryToHex(Encrypt(x, key)));
+                //ShowTable(Decrypt(x, key));
+                resultDec[j] = Decrypt(x, key);
+                str += System.Text.Encoding.ASCII.GetString(intArrToByteArr(Decrypt(x, key)));
+                //Console.Write(str);
+                j++;
+            }
+            Console.WriteLine("---");
+            //ShowTable(RemovePad(Flatten2DArray(resultDec)));
+            //Console.WriteLine(System.Text.Encoding.ASCII.GetString(intArrToByteArr(RemovePad(Flatten2DArray(resultDec)))));
+            //Console.WriteLine(Zeros);
+            //ShowByteArray(intArrToByteArr(RemovePad(Flatten2DArray(resultDec), Zeros)));
+            Console.WriteLine("---");
+            //ShowByteArray(IntTableToByteArray(resultDec));
+            //Console.WriteLine(str);
+            //Console.Write(ByteArrayToHexString(intArrToByteArr(RemovePad(Flatten2DArray(resultDec), Zeros))));
+            File.WriteAllBytes("C:\\Users\\kacpe\\Downloads\\SUKCES.pdf", intArrToByteArr(RemovePad(Flatten2DArray(resultDec), Zeros)));
 
 
             //Console.WriteLine(str);
